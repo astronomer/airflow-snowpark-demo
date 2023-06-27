@@ -1,0 +1,10 @@
+version: '3.1'
+services:
+  scheduler:
+    environment:
+      AIRFLOW_CONN_SNOWFLAKE_DEFAULT: ${AIRFLOW_CONN_SNOWFLAKE_DEFAULT}
+      AIRFLOW__CORE__XCOM_BACKEND: 'astronomer.providers.snowflake.xcom_backends.snowflake.SnowflakeXComBackend'
+      AIRFLOW__CORE__XCOM_SNOWFLAKE_TABLE: 'DEMO.XCOM.XCOM_TABLE'
+      AIRFLOW__CORE__XCOM_SNOWFLAKE_STAGE: 'DEMO.XCOM.XCOM_STAGE'
+      AIRFLOW__CORE__XCOM_SNOWFLAKE_CONN_NAME: 'snowflake_default'
+      AIRFLOW__CORE__ALLOWED_DESERIALIZATION_CLASSES: airflow\.* astro\.* include\.astro\.*
