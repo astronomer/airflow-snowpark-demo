@@ -1,0 +1,10 @@
+categories:
+  - Airflow Fundamentals
+  - Big Data & Analytics
+  - Compute
+  - Data Processing
+  - Databases
+  - ETL/ELT
+  - Query Engines
+dags:
+  - path: dags/snowpark_demo.py
