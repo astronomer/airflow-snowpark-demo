@@ -3,10 +3,10 @@
   <img src="include/images/SnowparkLogo.png" width="200" /> 
 </p>
     
-### Status: This provider is currently in development and should not be used with production data.
+### Status: The astro-provider-snowpark provider used in this demo is currently in development and should not be used in production.
   
 # Airflow Provider for Snowpark
-This guide demonstrates using Apache Airflow to orchestrate a machine learning pipeline leveraging Airflow Operators and Decorators for Snowpark Python as well as a new customer XCOM backend using Snowflake tables and stages.  While this demo shows both the operators and the xcom backend either can be used without the other.
+This guide demonstrates using Apache Airflow to orchestrate a simple machine learning pipeline leveraging Airflow Operators and Decorators for Snowpark Python as well as a new customer XCOM backend using Snowflake tables and stages.  While this demo shows both the operators and the xcom backend either can be used without the other.
 
 At a high level [Astronomer's Snowflake Provider](https://github.com/astronomer/astro-provider-snowflake) provides the following:
 
@@ -34,7 +34,7 @@ See [below](#available-snowpark-operators-and-decorators) for a list of all Oper
 -  __The custom XCOM backend__: To provide additional security and data governance the Snowflake XCOM backend allows storing task input and output in Snowflake. Rather than storing potentially-sensitive data in the Airflow XCom tables Snowflake users can now ensure that all their data stays in Snowflake.  This also allows passing large data and/or non-serializable data (ie. Pandas dataframes) between tasks. JSON-serializable data is stored in an XCom table and large or non-serializable data is stored as objects in a Snowflake stage.
 
 ## Package
-While in development the provider package is not yet in pypi.  For this demo the provider is installed from a wheel file in `include/astro_provider_snowflake-0.0.1.dev1-py3-none-any.whl' and can be used in other projects by copying this file.
+While in development the provider package is not yet in pypi.  For this demo the provider is installed from a wheel file in `include/astro_provider_snowflake-0.0.0-py3-none-any.whl' and can be used in other projects by copying this file.
   
 # Demonstration
 The following demo has been created to show the use of this provider and leverages the Astronomer Runtime and Astro CLI to create a local dev instance of Airflow.
@@ -66,9 +66,17 @@ git clone https://github.com/astronomer/airflow-snowpark-demo
 cd airflow-snowpark-demo
 ```
   
-3. Save your Snowflake account credentials as environment variables. Edit the following strings with your account information and run the export command in the terminal window where you will run the remaining commands.
+3.  Setup shell environment variables for demo.  Update values in brackets `<>` and run the commands in the terminal where you will be running the demo.
+
+- Export database and schema to be used for this demo.  If these objects do not yet exist they can be created in a following step.
 ```bash
-export AIRFLOW_CONN_SNOWFLAKE_DEFAULT='{"conn_type": "snowflake", "login": "USER_NAME", "password": "PASSWORD", "schema": "demo", "extra": {"account": "ORG_NAME-ACCOUNT_NAME", "warehouse": "WAREHOUSE_NAME", "database": "demo", "region": "REGION_NAME", "role": "USER_ROLE", "authenticator": "snowflake", "session_parameters": null, "application": "AIRFLOW"}}'
+export DEMO_DATABASE='<DB_NAME>'
+export DEMO_SCHEMA='<SCHEMA_NAME>'
+```
+
+-Export Snowflake account credentials as environment variables.
+```bash
+export AIRFLOW_CONN_SNOWFLAKE_DEFAULT='{"conn_type": "snowflake", "login": "<USER_NAME>", "password": "<PASSWORD>", "schema": "${DEMO_SCHEMA}", "extra": {"account": "<ORG_NAME>-<ACCOUNT_NAME>", "warehouse": "<WAREHOUSE_NAME>", "database": "${DEMO_DATABASE}", "region": "<REGION_NAME>", "role": "<USER_ROLE>", "authenticator": "snowflake", "session_parameters": null, "application": "AIRFLOW"}}'
 ```
 
 4.  Start Apache Airflow:
@@ -76,21 +84,37 @@ export AIRFLOW_CONN_SNOWFLAKE_DEFAULT='{"conn_type": "snowflake", "login": "USER
 astro dev start
 ```  
 
-5. Connect to the Airflow Scheduler container to setup Snowflake objects for the demo.
+5. Setup Snowflake objects for the demo.  
+  
+If using an existing database and schema in Snowflake skip to step 6.  Otherwise run the following script to create a database, schema and tables needed for the demo.
+  
+Note, this must be run as a user with admin priveleges.  Alternatively use an existing database and schema or look at the setup scripts and have a Snowflake administrator create these objects and grant permissions.
+  
 ```bash
 astro dev bash -s
 ```
-Setup the Snowflake database, schema, tables, etc for this demo.  This must be run as a user with admin priveleges.  Alternatively use an existing database and schema or look at the setup scripts and have a Snowflake administrator create these objects and grant permissions.
+
 ```bash
 python include/utils/setup_snowflake.py \
   --conn_id 'snowflake_default' \
   --admin_role 'sysadmin' \
-  --database 'demo' \
-  --schema 'demo'
-exit
+  --database $DEMO_DATABASE \
+  --schema $DEMO_SCHEMA
 ```  
   
-6. Run the Snowpark Demo DAG
+6. Setup the database and stage to be used as the Snowflake XCOM backend.
+```bash
+astro dev bash -s
+```
+  
+```bash
+python include/utils/snowflake_xcom_backend.py \
+  --conn_id 'snowflake_default' \
+  --database $DEMO_DATABASE \
+  --schema $DEMO_SCHEMA
+```
+
+8. Run the Snowpark Demo DAG
 ```bash
 astro dev run dags unpause snowpark_demo
 astro dev run dags trigger snowpark_demo

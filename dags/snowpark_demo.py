@@ -3,16 +3,21 @@ from airflow.decorators import dag, task, task_group
 from astro import sql as aql
 from astro.files import File 
 from astro.sql.table import Table 
+import os
 from astronomer.providers.snowflake.utils.snowpark_helpers import SnowparkTable
+
+demo_database = os.environ['DEMO_DATABASE']
+demo_schema = os.environ['DEMO_SCHEMA']
 
 @dag(dag_id='snowpark_demo', 
      default_args={
-         "database": "DEMO",
-         "schema": "DEMO",
          "temp_data_output": "table",
-         "temp_data_db": "DEMO",
-         "temp_data_schema": 'XCOM',
-         "temp_data_overwrite": True},
+         "temp_data_db": demo_database,
+         "temp_data_schema": demo_schema,
+         "temp_data_overwrite": True,
+         "database": demo_database,
+         "schema": demo_schema
+         },
      schedule_interval=None, 
      start_date=datetime(2023, 4, 1))
 def snowpark_provider_demo():
@@ -21,7 +26,7 @@ def snowpark_provider_demo():
     _SNOWPARK_BIN = '/home/astro/.venv/snowpark/bin/python'
 
     ingest_files=['yellow_tripdata_sample_2019_01.csv', 'yellow_tripdata_sample_2019_02.csv']
-    raw_table = Table(name='TAXI_RAW', metadata={'database':'demo', 'schema':'demo'}, conn_id=_SNOWFLAKE_CONN_ID)
+    raw_table = Table(name='TAXI_RAW', metadata={'database':demo_database, 'schema':demo_schema}, conn_id=_SNOWFLAKE_CONN_ID)
 
     @task_group()
     def load():
@@ -45,7 +50,7 @@ def snowpark_provider_demo():
                                 F.col('TRIP_DISTANCE'), 
                                 F.col('TRIP_DURATION_SEC'))
 
-    @task.snowpark_virtualenv(python_version='3.8')
+    @task.snowpark_virtualenv(python_version='3.9')
     def feature_engineering(taxidf:SnowparkTable) -> SnowparkTable:
         from sklearn.preprocessing import MaxAbsScaler
         import pandas as pd

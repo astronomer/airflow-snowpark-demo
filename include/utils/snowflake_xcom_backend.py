@@ -6,9 +6,10 @@ def setup(hook:SnowflakeHook, database:str='DEMO', schema='XCOM', stage='XCOM_ST
     if not user_role:
         user_role = hook._get_conn_params()['role']
 
+#CREATE DATABASE IF NOT EXISTS {database};
+        # CREATE SCHEMA IF NOT EXISTS {database}.{schema};
     hook.run(f'''
-        CREATE DATABASE IF NOT EXISTS {database};
-        CREATE SCHEMA IF NOT EXISTS {database}.{schema};
+        
         CREATE OR REPLACE STAGE {database}.{schema}.{stage} DIRECTORY = (ENABLE = TRUE) ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE');
         CREATE OR REPLACE TABLE {database}.{schema}.{table} 
                                 ( 
@@ -32,8 +33,8 @@ if __name__ == "__main__":
         description='Setup  Airflow custom XCOM backend on Snowflake table/stage.',
         allow_abbrev=False)
 
-    parser.add_argument('--database', dest='database', default='DEMO')
-    parser.add_argument('--schema', dest='schema', default='XCOM')
+    parser.add_argument('--database', dest='database', default='')
+    parser.add_argument('--schema', dest='schema', default='')
     parser.add_argument('--table', dest='table', default='XCOM_TABLE')
     parser.add_argument('--stage', dest='stage', default='XCOM_STAGE')
     parser.add_argument('--admin_role', dest='admin_role', default='sysadmin')
@@ -44,11 +45,11 @@ if __name__ == "__main__":
 
     assert args.database
 
-    hook = SnowflakeHook(snowflake_conn_id=args.snowflake_conn_id, role=args.admin_role)
+    hook = SnowflakeHook(snowflake_conn_id=args.snowflake_conn_id) #, role=args.admin_role)
 
     setup(
         hook, 
-        database=args.database,  
+        database=args.database,
         schema=args.schema,
         stage=args.stage,
         table=args.table,
